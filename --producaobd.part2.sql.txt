@@ -1,0 +1,129 @@
+--producaobd.part2.sql
+
+-- 1. Quais os lotes com data de validade para o ano de 2024:
+SELECT *
+FROM Lote
+WHERE YEAR(datavalidade) = 2024;
+
+
+-- 2. Quantos lotes possuem data de validade para o ano de 2025:
+SELECT COUNT(*) AS total_lotes_2025
+FROM Lote
+WHERE YEAR(datavalidade) = 2025;
+
+
+-- 3. Quantos lotes existem para cada produto:
+SELECT codproduto, COUNT(*) AS total_lotes_por_produto
+FROM Lote
+GROUP BY codproduto;
+
+
+-- 4. Qual o valor total de lotes de um determinado produto:
+SELECT codproduto, SUM(precounitario * quantidade) AS valor_total_lotes
+FROM Lote
+GROUP BY codproduto;
+
+
+-- 5. Criar lista ordenada de lotes por data de validade:
+SELECT *
+FROM Lote
+ORDER BY datavalidade;
+
+
+-- 6. Selecionar lotes com validade entre fevereiro de 2024 e junho de 2026:
+SELECT *
+FROM Lote
+WHERE datavalidade BETWEEN '2024-02-01' AND '2026-06-30';
+
+
+--7. Listar os lotes com valor de lote acima da média entre todos os valores de lote do banco:
+INSERT INTO Lote (numlote, datavalidade, precounitario, quantidade, valorlote, codproduto) VALUES
+(118, '2029-12-28', 3.78, 1223, DEFAULT, 13);
+
+
+/*
+a. Um pequeno mercado comprou um lote fechado do Sabonete de
+Glicerina do fabricante Ancora. A validade desses sabonetes está
+para 28/12/29. Cada unidade desse sabonete custou R $3,78
+para nossa empresa. Foi encomendado um lote com 1.223
+unidades. Registre essas informações no banco de dados.
+*/
+WITH MediaValorLote AS (
+    SELECT AVG(valorlote) AS media
+    FROM Lote
+)
+SELECT Lote.*
+FROM Lote, MediaValorLote
+WHERE Lote.valorlote > MediaValorLote.Media;
+
+
+-- 8. Alterar o preço do Sabonete de Glicerina com uma redução de 15% no preço cadastrado:
+SELECT P.nomeproduto, L.precounitario
+FROM Produto AS P JOIN Lote AS L ON P.codproduto = L.codproduto
+WHERE P.codproduto = 13;
+
+UPDATE Lote
+SET precounitario = precounitario * 0.85
+WHERE codproduto = 13;
+
+
+-- 9. Excluir o Shampoo Anticaspa da Rexona:
+DELETE FROM Lote
+WHERE codproduto IN (SELECT codproduto FROM Produto WHERE nomeproduto = 'Shampoo Anticaspa' AND codfabricante = 2);
+DELETE FROM Produto
+WHERE nomeproduto = 'Shampoo Anticaspa' AND codfabricante = 2;
+SELECT *
+FROM Produto;
+
+
+-- 10. Altere a tabela lote de forma que o armazenamento do preço unitário do produto seja feito usando apenas duas casas decimais:
+ALTER TABLE Lote
+ALTER COLUMN precounitario DECIMAL(10, 2);
+
+
+/* 11. Altere a tabela lote inserindo uma coluna chamada STATUSLOTE. Essa
+coluna pode armazenar valores como “Recall”, “Liberado”. Como
+padrão, esse campo recebe valor de “Analise”. A coluna deve ser
+varchar e receber no máximo 9 caracteres:
+*/
+ALTER TABLE Lote
+ADD STATUSLOTE VARCHAR(9) DEFAULT 'Analise';
+
+UPDATE Lote
+SET STATUSLOTE = 'Analise'
+WHERE STATUSLOTE IS NULL;
+
+
+--Questão 12
+-- Atualizando o status dos lotes de acordo com a tabela fornecida
+UPDATE Lote
+SET STATUSLOTE = 
+    CASE numlote
+        WHEN 107 THEN 'Recall'
+        WHEN 113 THEN 'Liberado'
+        WHEN 117 THEN 'Liberado'
+        WHEN 108 THEN 'Recall'
+        WHEN 116 THEN 'Recall'
+        WHEN 112 THEN 'Liberado'
+        WHEN 109 THEN 'Liberado'
+        WHEN 114 THEN 'Liberado'
+    END
+WHERE numlote IN (107, 113, 117, 108, 116, 112, 109, 114);
+
+
+-- 13. Criar uma lista com a quantidade de lotes que estão classificados com cada um dos status existentes:
+SELECT STATUSLOTE, COUNT(*) AS QuantidadeLotes
+FROM Lote
+GROUP BY STATUSLOTE;
+
+
+-- 14. Apresentar uma lista com as quantidades de produtos fornecidas por cada fabricante:
+SELECT F.nomefabricante, COUNT(P.codproduto) AS quantidade_produtos
+FROM Fabricante F
+LEFT JOIN Produto P ON F.codfabricante = P.codfabricante
+GROUP BY F.codfabricante, F.nomefabricante;
+
+-------------------------------------------------------------------------------------------------------
+UPDATE Lote 
+SET valorlote = quantidade * precounitario
+
